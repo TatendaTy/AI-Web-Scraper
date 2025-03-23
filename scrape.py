@@ -1,28 +1,79 @@
-import selenium.webdriver as webdriver
-# from selenium.webdriver.chrome.service import Service
-import time
+from selenium.webdriver import Remote, ChromeOptions
+from selenium.webdriver.chromium.remote_connection import ChromiumRemoteConnection
+from bs4 import BeautifulSoup
 
 
+SBR_WEBDRIVER = 'https://brd-customer-hl_becf13ef-zone-ai_scraper:kduhds9f9eey@brd.superproxy.io:9515'
+
+
+# use brightdata for webscraping
 def scrap_website(website):
-    """
-    This function grabs the content from a website using Selenium.
-    """
     print("Launching Chrome browser...")
 
-    # Set Chrome options
-    options = webdriver.ChromeOptions()
-    # options.add_argument("--disable-gpu")  # Prevent graphical errors
-    # options.add_argument("--no-sandbox")   # Improve stability
-    # options.add_argument("--headless")     # Run without GUI (optional)
-
-    # Initialize ChromeDriver directly (since it's in PATH)
-    driver = webdriver.Chrome(options=options)
-
-    try:
+    sbr_connection = ChromiumRemoteConnection(SBR_WEBDRIVER, 'goog', 'chrome') # sbr connection 
+    with Remote(sbr_connection, options=ChromeOptions()) as driver: # connect to sbr as driver
         driver.get(website)
-        print("Page loaded successfully!")
-        time.sleep(10)
-        return driver.page_source  # Return page HTML
+        # CAPTCHA handling code goes here
+        print('Waiting captcha to solve...')
+        solve_res = driver.execute('executeCdpCommand', {
+            'cmd': 'Captcha.waitForSolve',
+            'params': {'detectTimeout': 10000},
+        }) # Wait for captcha solver to finish and get status
+        print('Captcha solve status:', solve_res['value']['status']) # 
+        print('Navigated! Scraping page content') # 
+        html = driver.page_source  # assign page source to html variable
+        
+        return html  # Return page HTML
 
-    finally:
-        driver.quit()  # Ensure driver quits properly
+
+# task 2: clean the DOM Content
+def extract_body_content(html_content):
+    soup = BeautifulSoup(html_content, "html.parser") # parse HTML content using BeautifulSoup
+    body_content = soup.body # extract body content from parsed HTML
+    if body_content:
+        return str(body_content)  # Return cleaned body content as a string
+    return "" # Return empty string if no body content found
+
+def clean_body_content(body_content):
+    soup = BeautifulSoup(body_content, "html.parser") # parse HTML content using BeautifulSoup
+
+    # loop through the parsed content and remove unwanted elements such as script and style tags
+    for script_or_style in soup(['script', 'style']):
+        script_or_style.extract()  # remove script and style tags from the parsed HTML
+
+    cleaned_content = soup.get_text(separator="\n") # convert cleaned HTML content to a string with newline characters as separators
+    cleaned_content = "\n".join(line.strip() for line in cleaned_content.splitlines() if line.strip()) # remove empty lines and strip leading/trailing whitespace from each line in the cleaned content if no newline characters are present
+
+    return cleaned_content  # Return cleaned body content as a string
+
+
+    
+# task 3: Split the content into batches to limit the token length based on what the model can handle
+# and the feed those characters into the LLM one batch at a time for easy processing
+# 
+def split_dom_content(dom_content, max_length=6000):
+    # split the body content into chunks of size max_length
+    # first create batches of 6000 characters from index i to i+max_length 
+    # the for loop steps by the max length up to the dom_content length and repeats until all characters are split into batches
+    return [ dom_content[i : i + max_length] for i in range(0, len(dom_content), max_length) ] # 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
