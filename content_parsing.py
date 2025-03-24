@@ -33,7 +33,7 @@ def parse_with_Ollama(dom_chunks, parse_description):
     for i, chunk in enumerate(dom_chunks, start=1): 
         response = chain.invoke({"dom_content": chunk, "parse_description": parse_description}) # pass the cleaned content and user prompt to the Ollama model
         print(f"Parsed {i} of {len(dom_chunks)}") # know the amount of chunks parsed
-        parsed_result.append(response["text"]) # append the parsed result to the LLM
+        parsed_result.append(response) # append the parsed result to the LLM
 
     return '\n'.join(parsed_result) # join all the parsed results into a single string and return it
 

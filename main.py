@@ -20,7 +20,8 @@ if st.button('Scrape Site'):
     st.session_state.dom_content = cleaned_content # store the cleaned content in session state for easy access in other parts of the app
     
     # expander textbox that allows us to expand it to view more content
-    with st.expander('View DOM Content'): # toggle button for viewing the DOM content
+    # toggle button for viewing the DOM content
+    with st.expander('View DOM Content'): 
         st.text_area("DOM Content", cleaned_content, height=300) # write the content in a text area for viewing
 
 
